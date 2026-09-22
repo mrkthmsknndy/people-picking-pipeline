@@ -1,0 +1,22 @@
+# Real survey data and run outputs must never be committed -- they contain
+# names and emails. Only examples/example_* (synthetic, fictional) is tracked.
+*.csv
+!examples/example_raw_qualtrics.csv
+!examples/example_roster.csv
+out*/
+output*/
+examples/example_output/
+profiles/
+profiles_csv.zip
+*.zip
+network_diagrams/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
