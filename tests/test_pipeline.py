@@ -59,8 +59,35 @@ def test_preview_and_unfinished_rows_dropped_by_default():
     shutil.rmtree(outdir)
 
 
+def test_3d_diagrams_are_self_contained_and_offline():
+    outdir = os.path.join(ROOT, "tests", "_tmp_out_3d")
+    _run(outdir, ["--roster", EXAMPLE_ROSTER])
+    viz3d = os.path.join(outdir, "network_diagrams_3d")
+    htmls = sorted(f for f in os.listdir(viz3d) if f.endswith(".html"))
+    assert len(htmls) == 5, f"expected 5 interactive diagrams, found {htmls}"
+    # no companion JS file -- each HTML file must carry Plotly.js inline, so a
+    # single file can be copied/emailed on its own and still work offline
+    assert not os.path.isfile(os.path.join(viz3d, "plotly.min.js"))
+    sample_path = os.path.join(viz3d, htmls[0])
+    sample = open(sample_path, encoding="utf-8").read()
+    assert "cdnjs.cloudflare.com" not in sample
+    assert "<script src=" not in sample, "Plotly.js should be inlined, not referenced by src="
+    assert os.path.getsize(sample_path) > 1_000_000, "inlined Plotly.js should make each file a few MB"
+    shutil.rmtree(outdir)
+
+
+def test_no_3d_flag_skips_interactive_diagrams():
+    outdir = os.path.join(ROOT, "tests", "_tmp_out_no3d")
+    _run(outdir, ["--no-3d"])
+    assert not os.path.isdir(os.path.join(outdir, "network_diagrams_3d"))
+    assert os.path.isdir(os.path.join(outdir, "network_diagrams"))
+    shutil.rmtree(outdir)
+
+
 if __name__ == "__main__":
     test_runs_respondent_only()
     test_runs_full_cohort_roster()
     test_preview_and_unfinished_rows_dropped_by_default()
+    test_3d_diagrams_are_self_contained_and_offline()
+    test_no_3d_flag_skips_interactive_diagrams()
     print("All smoke tests passed.")

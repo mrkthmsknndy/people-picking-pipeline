@@ -1,16 +1,38 @@
 # People Picking Pipeline
 
-Turns a raw Qualtrics download of the **People Picking** sociometric survey
-exercise into anonymized per-person profiles, cohort-level statistics, and
-network diagrams -- in one command, with no manual spreadsheet wrangling.
+Purpose 
+The project provides a command line utility that takes a raw Qualtrics download
+of the **People Picking** sociometric survey (Kennedy 2026) and produces anonymized
+per-person profiles, cohort-level statistics, and interactive 3d network
+visualisations viewable in a standard browser. Everything happens in one command,
+and the .html visualisation files have no dependencies (just open and inspect).
+The survey data are useful for research and teaching. 
 
-Originally built for the People Picking exercise in Mark Kennedy and Antoine
-Vernet's Organisational Behaviour teaching (Imperial College Business School),
-which asks respondents to pick cohort-mates for a mix of social and
-task-focused scenarios (a friendship/social pick, an advice pick, and three
-work-team picks: design, lobbying, implementation) and returns each person an
-anonymized picture of their own "people picking" style relative to the
-cohort. The underlying method -- pick networks, indegree-based popularity
+Exercise and Data 
+The exercise and pipeline is based on a survey created by Kennedy and refined by 
+Kennedy and Vernet over several years in classes taught by Kennedy, Vernet, and 
+Chaturvedi. The current version is a stable settlement of iterations and small 
+changes over some years. For a copy of the Qualtrics survey, please ... 
+
+Cohort-focused Survey
+The Qualtrics survey is geared for use in cohorts of manageable size and works 
+well for cohorts of more than a few dozen and less than 100. (Though we have used 
+on a chort of 250, it starts to become unwieldy with cohorts of more than 150.) 
+In brief, the survey asks respondents to pick from among cohort-mates 
+in response to a basket of social and task-focused scenarios. These include a 
+social occasion (friendship), job seeking counsel (advice), and three work-teams 
+defined around tasks requiring creativity, influencece, and implementation. Whilst
+the Qualtrics platform allows for complete anonymisation, the default pipeline 
+assumes a raw data download that contains the emails used to distribute the survey 
+to the cohort. The pipeline creates a table that maps email to anonymised IDs used 
+in the individual profile reports and cohort summary data and visualisations. 
+The pipeline produces a file that maps emails to anonymised IDs, so care must be
+taken to protect access to the email-ID map.     
+
+Returns
+The survey returns a high-level summary of individual- and cohort-level data to 
+provide respondents with an anonymised view of their own "people picking" style relative 
+to the cohort. The underlying method -- pick networks, indegree-based popularity
 scoring, IQ-style rescaling -- generalizes to any small-cohort sociometric
 survey shaped the same way.
 
@@ -34,9 +56,11 @@ From one raw CSV, the pipeline:
    combined Design+Lobbying+Implementation omnibus (`nQ(*)_unique` /
    `nQ(*)_dupe`) and a variability score `nQ(V)` (how much a person varies
    their picks across the three task teams).
-4. **Draws a network diagram** for each of the five networks.
-5. **Writes per-person profile CSVs** (+ a zip) and an id&harr;email map for
-   mail-merging results back to participants, plus cohort summary stats, a
+4. **Draws a network diagram** for each of the five networks -- a static PNG
+   plus a matching interactive 3D HTML version (same layout, height shows
+   indegree; drag to rotate, works fully offline).
+5. **Writes per-person profile `.txt` files** (+ a zip) and an id&harr;email map
+   for mail-merging results back to participants, plus cohort summary stats, a
    correlation table, and simple regressions of friendship popularity against
    task-pick popularity.
 6. **Writes `DATA_DICTIONARY.md`** into the output folder describing every
@@ -108,7 +132,9 @@ python people_picking_pipeline.py --in RAW.csv --outdir OUTDIR
     [--roster roster.csv]      Full-cohort scope (see above)
     [--include-preview]        Keep preview/blank rows (dropped by default)
     [--include-unfinished]     Keep Finished=False rows (dropped by default)
-    [--no-viz]                 Skip the five network diagrams
+    [--no-viz]                 Skip the five network diagrams (2D and 3D)
+    [--no-3d]                  Skip the interactive 3D HTML diagrams; the
+                                five static 2D PNGs are still produced
     [--cohort-pack]            Extra PNGs + a PDF slide deck (3D scatter,
                                 friendship-vs-task-pick regressions, a
                                 correlation heatmap)
@@ -128,6 +154,13 @@ two constants.
 
 ```
 people_picking_pipeline.py   the whole tool -- one file, one entry point
+assets/
+  plotly.min.js               bundled charting library (MIT) -- inlined
+                               directly into each interactive 3D HTML file
+                               at generation time, so every one of those
+                               files is single-file and fully offline
+                               (no companion JS file, no CDN, no internet
+                               connection needed to open it)
 examples/
   make_example_data.py       regenerates the fictional example dataset
   example_raw_qualtrics.csv  synthetic "raw download" (fake names/emails)
@@ -136,6 +169,14 @@ examples/
 tests/
   test_pipeline.py           smoke tests + a few invariant checks
 ```
+
+Each run's output folder also gets a `network_diagrams_3d/` alongside
+`network_diagrams/` -- one interactive HTML file per pick network (same
+layout as the matching PNG, but with height showing indegree; drag to
+rotate). Each file is self-contained (a few MB, since the charting library
+is inlined in every one), so a single `.html` can be copied or emailed on
+its own and will open and work with no other files and no internet
+connection. Skip the whole folder with `--no-3d`.
 
 ## Privacy
 
