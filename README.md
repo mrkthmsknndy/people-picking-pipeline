@@ -73,7 +73,7 @@ the tool has no network calls.
 ## Quick start
 
 ```bash
-git clone https://github.com/REPLACE_ME/people-picking-pipeline.git
+git clone https://github.com/mrkthmsknndy/people-picking-pipeline.git
 cd people-picking-pipeline
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
