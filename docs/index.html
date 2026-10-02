@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Picking Pipeline -- live interactive diagrams</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         max-width: 760px; margin: 48px auto; padding: 0 20px; color: #222; }
+  h1 { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; }
+  h1 img { height: 40px; width: 40px; }
+  p.sub { color: #555; margin-top: -8px; }
+  ul { line-height: 2.1; font-size: 1.05rem; }
+  a { color: #1a4fa0; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .note { margin-top: 2.5rem; padding: 14px 18px; background: #f4f6f9; border-radius: 8px;
+          font-size: 0.92rem; color: #444; }
+  footer { margin-top: 3rem; font-size: 0.85rem; color: #888; }
+</style>
+</head>
+<body>
+  <h1><img src="logo.png" alt=""> People Picking Pipeline</h1>
+  <p class="sub">Live interactive 3D network diagrams, generated from the repo's synthetic example dataset.</p>
+
+  <p>Drag to rotate, scroll to zoom, hover a node for details, click a legend entry to
+  show/hide respondents or not-yet-responded cohort members. Height shows indegree --
+  the more often someone was picked, the taller their tower.</p>
+
+  <ul>
+    <li><a href="network_dPicks_3d.html">Design (Opportunity)</a></li>
+    <li><a href="network_lPicks_3d.html">Lobbying (Influence)</a></li>
+    <li><a href="network_iPicks_3d.html">Implementation (Cohesion)</a></li>
+    <li><a href="network_fPicks_3d.html">Friendship</a></li>
+    <li><a href="network_aPicks_3d.html">Advice</a></li>
+  </ul>
+
+  <div class="note">
+    These are built from the fictional example data bundled with the repo
+    (<code>examples/example_raw_qualtrics.csv</code>) -- not real survey responses.
+    Each page is fully self-contained; running the pipeline on your own data produces
+    the same kind of file for your own cohort, viewable offline with no server needed.
+  </div>
+
+  <footer>
+    <a href="https://github.com/mrkthmsknndy/people-picking-pipeline">people-picking-pipeline</a> on GitHub
+  </footer>
+</body>
+</html>

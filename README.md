@@ -38,6 +38,9 @@ survey shaped the same way.
 
 ![Example network diagram](examples/sample_network_design.png)
 
+**[&#9654; View live interactive 3D diagrams](https://mrkthmsknndy.github.io/people-picking-pipeline/)**
+-- drag to rotate, built from the repo's synthetic example data.
+
 ## What it does
 
 From one raw CSV, the pipeline:

@@ -266,6 +266,35 @@ def popularity_table(A, ids, label):
     return dfp
 
 
+def group_omnibus_scores(As, group_cols, ids, label):
+    """Generalizes the DLI-omnibus 'perspicacity' pattern to any subset of pick
+    networks: pool a person's picks across `group_cols` (e.g. the three task
+    networks, or friendship+advice, or all five), look up each pick's indegree
+    within the union-adjacency of that same group, and sum it -- once counting
+    a person twice if picked in more than one network in the group ('_dupe'),
+    once deduped to distinct people picked ('_unique')."""
+    A_group = (sum(As[c] for c in group_cols) > 0).astype(int)
+    in_group = indegrees(A_group)
+    rows = []
+    for i in ids:
+        picked_lists = [[c for c, v in As[col].loc[i].items() if v == 1] for col in group_cols]
+        with_dupes = [p for lst in picked_lists for p in lst]
+        unique = sorted(set(with_dupes) - {i})
+        score_dupe = int(in_group.reindex(with_dupes).fillna(0).sum()) if with_dupes else 0
+        score_unique = int(in_group.reindex(unique).fillna(0).sum()) if unique else 0
+        rows.append({
+            "id": i,
+            f"score_{label}_dupe": score_dupe, f"k_{label}_dupe": len(with_dupes),
+            f"score_{label}_unique": score_unique, f"k_{label}_unique": len(unique),
+        })
+    gdf = pd.DataFrame(rows).set_index("id").loc[ids]
+    for col in [f"score_{label}_dupe", f"score_{label}_unique"]:
+        z = zscore(gdf[col])
+        gdf[f"z_{col}"] = z.round(4)
+        gdf[f"iq_{col}"] = iq_scale(z)
+    return gdf.reset_index()
+
+
 # ---------------------------------------------------------------------------
 # Network diagrams
 # ---------------------------------------------------------------------------
@@ -901,10 +930,21 @@ def main():
     dli_df = dli_df.drop(columns=["k_d", "k_l", "k_i"])
     scored = main_tbl.merge(dli_df, on="id", how="left")
 
+    # Non-normalised "perspicacity" omnibus scores for the other two natural
+    # groupings: friendship+advice only (social, not task), and all five
+    # networks combined. Same pooled-indegree logic as the D+L+I omnibus above.
+    fa_df = group_omnibus_scores(As, ["fPicks", "aPicks"], ids, "fa")
+    all5_df = group_omnibus_scores(
+        As, ["dPicks", "lPicks", "iPicks", "fPicks", "aPicks"], ids, "all5")
+    scored = scored.merge(fa_df, on="id", how="left")
+    scored = scored.merge(all5_df, on="id", how="left")
+
     rename_to_nq = {
         "iq_d": "nQ(O)", "iq_i": "nQ(C)", "iq_l": "nQ(I)",
         "iq_f": "nQ(F)", "iq_a": "nQ(A)",
         "iq_score_dli_dupe": "nQ(*)_dupe", "iq_score_dli_unique": "nQ(*)_unique",
+        "iq_score_fa_dupe": "nQ(FA)_dupe", "iq_score_fa_unique": "nQ(FA)_unique",
+        "iq_score_all5_dupe": "nQ(All5)_dupe", "iq_score_all5_unique": "nQ(All5)_unique",
     }
     scored_nq = scored.rename(columns=rename_to_nq)
     scored_nq.to_csv(os.path.join(args.outdir, "pp_pick_popularity_all_scored_nq.csv"), index=False)
@@ -1053,6 +1093,10 @@ Per-respondent scores for how widely-picked your picks are, by network. Z-scores
 - **score_a / z_a / nQ(A)** -- Advice (separate).
 - **score_dli_unique / z_score_dli_unique / nQ(*)_unique** -- D+L+I (unique alters).
 - **score_dli_dupe / z_score_dli_dupe / nQ(*)_dupe** -- D+L+I (duplicates allowed).
+- **score_fa_unique / z_score_fa_unique / nQ(FA)_unique** -- Friendship+Advice combined (unique alters): popularity of the people you picked for either social question, each counted once even if picked for both.
+- **score_fa_dupe / z_score_fa_dupe / nQ(FA)_dupe** -- Friendship+Advice combined (duplicates allowed): same, but someone picked for both questions is counted twice.
+- **score_all5_unique / z_score_all5_unique / nQ(All5)_unique** -- All five networks combined (unique alters).
+- **score_all5_dupe / z_score_all5_dupe / nQ(All5)_dupe** -- All five networks combined (duplicates allowed).
 - **k_d, k_l, k_i** -- Picks per task.
 - **k_dli_total, k_dli_unique, nQ(V)** -- Variability across D/L/I where nQ(V) = unique / total.
 
@@ -1102,6 +1146,11 @@ popularity constructs; "Flexibility(Overall)" labels nQ(V), the pick-variability
 profile also closes with that person's own launch-party answers (name, style, first/second-choice
 guest preference) verbatim from the survey -- plain text, no val/mean/s.d. triplet, since these
 are categorical, not scored.
+
+nQ(FA)_unique/_dupe (Friendship+Advice combined) and nQ(All5)_unique/_dupe (all five networks
+combined) are cohort-level-only for now, same "perspicacity" construct extended to a social-only
+and a grand-total grouping -- not yet added to the participant-facing profile pending a decision
+on labeling and whether they belong there given the Friendship/Advice exclusion above.
 """
     with open(os.path.join(args.outdir, "DATA_DICTIONARY.md"), "w", encoding="utf-8") as f:
         f.write(dd)
@@ -1115,7 +1164,8 @@ are categorical, not scored.
         nq_fmt[c] = pd.to_numeric(nq_fmt[c], errors="coerce").round().astype("Int64")
     nq_fmt.to_csv(os.path.join(args.outdir, "pp_pick_popularity_all_scored_nq_v_fmt.csv"), index=False)
 
-    vars_nq = ["nQ(C)", "nQ(I)", "nQ(O)", "nQ(V)", "nQ(*)_unique", "nQ(*)_dupe"]
+    vars_nq = ["nQ(C)", "nQ(I)", "nQ(O)", "nQ(V)", "nQ(*)_unique", "nQ(*)_dupe",
+               "nQ(FA)_unique", "nQ(FA)_dupe", "nQ(All5)_unique", "nQ(All5)_dupe"]
     vars_deg = ["in_dPicks", "in_lPicks", "in_iPicks", "in_fPicks", "in_anyPick"]
     summary_rows = []
     for col in vars_nq + vars_deg:
